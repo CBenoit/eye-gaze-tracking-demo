@@ -3,17 +3,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+
 #include <ow/shader_program.hpp>
 #include <ow/camera_fps.hpp>
-#include <ow/vertex.hpp>
-#include <ow/lights_set.hpp>
-#include <ow/directional_light.hpp>
-#include <ow/point_light.hpp>
-#include <ow/spotlight.hpp>
-#include <ow/mesh.hpp>
-#include <ow/texture.hpp>
 #include <ow/model.hpp>
 #include <ow/utils.hpp>
 #include <gui/window.hpp>
@@ -62,105 +54,12 @@ int main() {
 	// ==========
 	window.init_imgui();
 
-	// load the texture
-	// ----------------
-	auto white_texture = std::make_shared<ow::texture>("resources/textures/white.jpg", ow::texture_type::emission);
-
 	// load shaders
 	// ------------
-	ow::shader_program prog{
-			{{GL_VERTEX_SHADER, "phong_vertex.glsl"}
-			,{GL_FRAGMENT_SHADER, "phong_frag.glsl"}
-	}};
-
-	// set up mesh
-	// -----------
-	std::vector<ow::vertex> vertices = {
-		// front
-		{glm::vec3(-0.5, -0.5, 0.5), glm::vec3(0, 0, 1), glm::vec2(0, 0)},
-		{glm::vec3(-0.5,  0.5, 0.5), glm::vec3(0, 0, 1), glm::vec2(0, 1)},
-		{glm::vec3(0.5,  -0.5, 0.5), glm::vec3(0, 0, 1), glm::vec2(1, 0)},
-		{glm::vec3(0.5,   0.5, 0.5), glm::vec3(0, 0, 1), glm::vec2(1, 1)},
-
-		// back
-		{glm::vec3(-0.5, -0.5, -0.5), glm::vec3(0, 0, -1), glm::vec2(0, 0)},
-		{glm::vec3(-0.5,  0.5, -0.5), glm::vec3(0, 0, -1), glm::vec2(0, 1)},
-		{glm::vec3(0.5,  -0.5, -0.5), glm::vec3(0, 0, -1), glm::vec2(1, 0)},
-		{glm::vec3(0.5,   0.5, -0.5), glm::vec3(0, 0, -1), glm::vec2(1, 1)},
-
-		// left
-		{glm::vec3(-0.5, -0.5, -0.5), glm::vec3(-1, 0, 0), glm::vec2(0, 0)},
-		{glm::vec3(-0.5,  0.5, -0.5), glm::vec3(-1, 0, 0), glm::vec2(0, 1)},
-		{glm::vec3(-0.5, -0.5,  0.5), glm::vec3(-1, 0, 0), glm::vec2(1, 0)},
-		{glm::vec3(-0.5,  0.5,  0.5), glm::vec3(-1, 0, 0), glm::vec2(1, 1)},
-
-		// right
-		{glm::vec3(0.5, -0.5, -0.5), glm::vec3(1, 0, 0), glm::vec2(0, 0)},
-		{glm::vec3(0.5,  0.5, -0.5), glm::vec3(1, 0, 0), glm::vec2(0, 1)},
-		{glm::vec3(0.5, -0.5,  0.5), glm::vec3(1, 0, 0), glm::vec2(1, 0)},
-		{glm::vec3(0.5,  0.5,  0.5), glm::vec3(1, 0, 0), glm::vec2(1, 1)},
-
-		// top
-		{glm::vec3(-0.5, 0.5, -0.5), glm::vec3(0, 1, 0), glm::vec2(0, 0)},
-		{glm::vec3(-0.5, 0.5,  0.5), glm::vec3(0, 1, 0), glm::vec2(0, 1)},
-		{glm::vec3( 0.5, 0.5, -0.5), glm::vec3(0, 1, 0), glm::vec2(1, 0)},
-		{glm::vec3( 0.5, 0.5,  0.5), glm::vec3(0, 1, 0), glm::vec2(1, 1)},
-
-		// bottom
-		{glm::vec3(-0.5, -0.5, -0.5), glm::vec3(0, -1, 0), glm::vec2(0, 0)},
-		{glm::vec3(-0.5, -0.5,  0.5), glm::vec3(0, -1, 0), glm::vec2(0, 1)},
-		{glm::vec3( 0.5, -0.5, -0.5), glm::vec3(0, -1, 0), glm::vec2(1, 0)},
-		{glm::vec3( 0.5, -0.5,  0.5), glm::vec3(0, -1, 0), glm::vec2(1, 1)},
-	};
-
-	std::vector<GLuint> indices = {
-		// front face
-		0, 1, 2, // first triangle
-		1, 2, 3,  // second triangle
-		// back face
-		4, 5, 6,
-		5, 6, 7,
-		// left face
-		8, 9, 10,
-		9, 10, 11,
-		// right face
-		12, 13, 14,
-		13, 14, 15,
-		// top face
-		16, 17, 18,
-		17, 18, 19,
-		// bottom face
-		20, 21, 22,
-		21, 22, 23,
-	};
-
-	ow::mesh lamp_mesh{std::move(vertices), std::move(indices)};
-	lamp_mesh.add_texture(white_texture);
-
-	// lights
-	// ------
-	ow::lights_set lights;
-	lights.add_directional_light(std::make_shared<ow::directional_light>(glm::vec3(1.0f, -1.0f, -1.0f), glm::vec3(.3f)));
-
-	std::vector<std::shared_ptr<ow::point_light>> point_lights;
-	{
-		glm::vec3 positions[] = {
-			glm::vec3( 0.7f,  0.2f,  2.0f),
-			glm::vec3( 2.3f, -3.3f, -4.0f),
-			glm::vec3(-4.0f,  2.0f, -12.0f),
-			glm::vec3( 0.0f,  0.0f, -3.0f)
-		};
-
-		for (auto& pos : positions) {
-			auto light = std::make_shared<ow::point_light>(pos, 1.0, 0.045, 0.0075);
-			lights.add_point_light(light);
-			point_lights.push_back(light);
-		}
-	}
-
-	prog.use();
-	prog.set("materials_shininess", 32.f);
-	lights.update_all(prog, glm::mat4());
+	ow::shader_program colorify_prog{{
+        {GL_VERTEX_SHADER, "lamp_vertex.glsl"},
+        {GL_FRAGMENT_SHADER, "lamp_frag.glsl"}
+    }};
 
 	// load models
 	// -----------
@@ -186,48 +85,34 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ow::check_errors("Failed to clear scr.");
 
-		// activate shader program
-		prog.use();
-
 		// create transformations
 		glm::mat4 view = camera.get_view_matrix();
 		glm::mat4 proj = camera.get_proj_matrix(static_cast<float>(SCR_WIDTH) / static_cast<float>(SCR_HEIGHT));
-		prog.set("view", view);
-		prog.set("proj", proj);
+		glm::mat4 VP = proj * view;
 
-		// update lights
-		lights.update_position_and_direction(prog, view);
+		// activate shader program
+		colorify_prog.use();
 
 		{ // nanosuit
 			glm::mat4 model{1.0f};
-			model = glm::translate(model, glm::vec3(-2.5));
+			model = glm::translate(model, glm::vec3(-5, 0, 0));
 			model = glm::scale(model, glm::vec3(0.5));
-			prog.set("model", model);
-
-			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(view * model)));
-			prog.set("normal_matrix", normal_matrix);
-
-			nanosuit.draw(prog);
+			colorify_prog.set("MVP", VP * model);
+			colorify_prog.set("color", glm::vec3(1, 0, 0));
+			nanosuit.draw(colorify_prog);
 		}
 
-		// draw lamps
-		for (auto&& pt_light : point_lights) {
+		{ // nanosuit 2
 			glm::mat4 model{1.0f};
-			model = glm::translate(model, pt_light->get_pos());
-			model = glm::scale(model, glm::vec3(.2f));
-			prog.set("model", model);
-
-			glm::mat3 normal_matrix = glm::mat3(glm::transpose(glm::inverse(view * model)));
-			prog.set("normal_matrix", normal_matrix);
-
-			lamp_mesh.draw(prog);
+			model = glm::translate(model, glm::vec3(5, 0, 0));
+			model = glm::scale(model, glm::vec3(0.5));
+			colorify_prog.set("MVP", VP * model);
+			colorify_prog.set("color", glm::vec3(0, 1, 0));
+			nanosuit.draw(colorify_prog);
 		}
 
 		window.render();
 	}
-
-	// glfw: terminate, clearing all previously allocated GLFW resources.
-	glfwTerminate();
 
 	return EXIT_SUCCESS;
 }
