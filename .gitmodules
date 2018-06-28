@@ -1,3 +1,6 @@
 [submodule "ow"]
 	path = ow
 	url = https://github.com/Organic-Code/IN55---Solids
+[submodule "eye-tracking-lib"]
+	path = eye-tracking-lib
+	url = https://github.com/Organic-Code/TX-eye-tracking

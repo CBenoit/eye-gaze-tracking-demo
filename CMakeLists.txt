@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(OpenGL REQUIRED)
 find_package(assimp REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_subdirectory(ow/)
 
@@ -19,16 +20,22 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")
 endif()
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+set(CMAKE_BINARY_DIR ${PROJECT_BINARY_DIR}/bin)
+
 file(GLOB_RECURSE SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 include_directories(
         SYSTEM ow/include
         SYSTEM ow/external
+        SYSTEM eye-tracking-lib/include
+        SYSTEM /usr/include/opencv
 )
 
 add_executable(
         eye_gaze_tracking_demo
         ${SOURCES}
+        eye-tracking-lib/src/eye_finder.cpp
 )
 
-target_link_libraries(eye_gaze_tracking_demo ow gui)
+target_link_libraries(eye_gaze_tracking_demo ow gui ${OpenCV_LIBS} sfml-system sfml-audio)
